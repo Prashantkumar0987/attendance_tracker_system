@@ -51,7 +51,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 async function connectDB() {
-  let uri = process.env.MONGODB_URI;
+  let uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/attendance_tracker';
   if (uri.includes('127.0.0.1') || uri.includes('localhost')) {
     try {
       const { MongoMemoryServer } = require('mongodb-memory-server');
