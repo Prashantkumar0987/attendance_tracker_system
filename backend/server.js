@@ -65,6 +65,13 @@ async function connectDB() {
     }
   }
 
+  console.log('Attempting to connect to MongoDB...');
+  if (uri.startsWith('mongodb+srv')) {
+    console.log('Using cloud database starting with:', uri.substring(0, 15) + '...');
+  } else {
+    console.log('Using local/memory database.');
+  }
+
   mongoose.connect(uri)
     .then(() => {
       console.log('✅ Connected to MongoDB');
