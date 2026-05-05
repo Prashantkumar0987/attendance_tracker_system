@@ -89,10 +89,7 @@ async function startServer() {
     console.log('🔌 Connecting to MongoDB...');
     console.log('DB Type:', uri.startsWith('mongodb+srv') ? 'Atlas (Cloud)' : 'Local');
 
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(uri);
 
     console.log('✅ MongoDB Connected');
 
