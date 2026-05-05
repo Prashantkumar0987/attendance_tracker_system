@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -10,81 +11,101 @@ const attendanceRoutes = require('./src/routes/attendance');
 
 const app = express();
 
-// Rate limiting
+// ====================
+// 🔒 Rate Limiting
+// ====================
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 200,
   message: { success: false, message: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);
 
-// Middleware
+// ====================
+// 🌐 Middleware
+// ====================
 app.use(cors({
-  origin: function (origin, callback) {
-    callback(null, true); // Allow all origins for the demo
-  },
+  origin: true,
   credentials: true
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// ====================
+// 📌 Routes
+// ====================
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 
-// Health check
+// ====================
+// ❤️ Health Check
+// ====================
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'Attendance Tracker API is running.', timestamp: new Date() });
+  res.status(200).json({
+    success: true,
+    message: 'Attendance Tracker API is running.',
+    timestamp: new Date()
+  });
 });
 
-// 404 handler
+// ====================
+// ❌ 404 Handler
+// ====================
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found.` });
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found.`
+  });
 });
 
-// Global error handler
+// ====================
+// ⚠️ Global Error Handler
+// ====================
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({ success: false, message: err.message || 'Internal server error.' });
+  console.error('🔥 ERROR:', err.message);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal server error'
+  });
 });
 
-// Database connection and server start
+// ====================
+// 🚀 DB + Server Start
+// ====================
 const PORT = process.env.PORT || 5000;
 
-async function connectDB() {
-  let uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/attendance_tracker';
-  if (uri.includes('127.0.0.1') || uri.includes('localhost')) {
-    try {
-      const { MongoMemoryServer } = require('mongodb-memory-server');
-      const mongoServer = await MongoMemoryServer.create();
-      uri = mongoServer.getUri();
-      console.log('✅ Started MongoDB Memory Server');
-    } catch (error) {
-      console.error('Failed to start memory server:', error);
+async function startServer() {
+  try {
+    let uri = process.env.MONGODB_URI;
+
+    // ❌ If no cloud DB, fallback to local
+    if (!uri) {
+      console.log('⚠️ No MONGODB_URI found, using local MongoDB...');
+      uri = 'mongodb://127.0.0.1:27017/attendance';
     }
-  }
 
-  console.log('Attempting to connect to MongoDB...');
-  if (uri.startsWith('mongodb+srv')) {
-    console.log('Using cloud database starting with:', uri.substring(0, 15) + '...');
-  } else {
-    console.log('Using local/memory database.');
-  }
+    console.log('🔌 Connecting to MongoDB...');
+    console.log('DB Type:', uri.startsWith('mongodb+srv') ? 'Atlas (Cloud)' : 'Local');
 
-  mongoose.connect(uri)
-    .then(() => {
-      console.log('✅ Connected to MongoDB');
-      app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-      });
-    })
-    .catch((err) => {
-      console.error('❌ MongoDB connection failed:', err.message);
-      process.exit(1);
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
     });
+
+    console.log('✅ MongoDB Connected');
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    process.exit(1);
+  }
 }
 
-connectDB();
+startServer();
 
 module.exports = app;
